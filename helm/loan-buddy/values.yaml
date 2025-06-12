@@ -1,0 +1,10 @@
+replicaCount: 1
+
+image:
+  repository: loan-buddy
+  tag: "latest"
+  pullPolicy: Never  # because I am using a local Docker image
+
+service:
+  type: NodePort
+  port: 8080
