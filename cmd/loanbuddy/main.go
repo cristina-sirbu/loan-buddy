@@ -2,13 +2,17 @@ package main
 
 import (
 	"log"
-	"net/http"
 
 	"github.com/cristina-sirbu/loan-buddy/api"
+	"github.com/labstack/echo/v4"
 )
 
 func main() {
-	http.HandleFunc("/offers", api.OffersHandler)
+	e := echo.New()
+
+	// Set up routes
+	e.GET("/offers", api.GetOffers)
+	// Start the server
 	log.Println("Server running on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	e.Logger.Fatal(e.Start(":8080"))
 }

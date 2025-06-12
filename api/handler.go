@@ -1,22 +1,18 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/cristina-sirbu/loan-buddy/internal/aggregator"
+	"github.com/labstack/echo/v4"
 )
 
-func OffersHandler(w http.ResponseWriter, r *http.Request) {
+// GET /offers
+func GetOffers(c echo.Context) error {
 	offers := aggregator.AggregateOffers()
-	w.Header().Set("Content-Type", "application/json")
 	if len(offers) == 0 {
-		http.Error(w, "No offers available", http.StatusNotFound)
-		return
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "No offers available"})
 	}
 
-	if err := json.NewEncoder(w).Encode(offers); err != nil {
-		http.Error(w, "Error encoding response", http.StatusInternalServerError)
-		return
-	}
+	return c.JSON(http.StatusOK, offers)
 }
