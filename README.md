@@ -140,8 +140,11 @@ To improve project:
 
 * [ ] Replace mock data with actual third-party APIs
 * [ ] Store data in a real database
+* [ ] Move approval to async (Pub/Sub) for decoupling
 * [ ] Add authentication
 * [ ] Do an actual deployemnt to GKE
+* [ ] Add retry queue for failed approval requests
+* [ ] Export events to BigQuery for product analytics
 
 ---
 
