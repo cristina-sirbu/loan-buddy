@@ -20,6 +20,33 @@
 
 ---
 
+## Architecture
+
+The system consists of two main services:
+
+* **Go Backend**: Handles loan offers, user checkout.
+* **Python FastAPI Service**: Simulates external confirmation (eg. payment)
+
+### User Flow
+
+In the current design, the Go service directly calls the Python FastAPI service over HTTP to receive approval status in real time.
+
+![Current Architecture](./docs/architecture_current.png)
+
+This synchronous design is simple and effective for interactive use cases, where the user expects an immediate response (eg. checkout confirmation).
+
+However, in a scalable production system, this flow would be refactored into a decoupled architecture using asynchronous communication:
+
+* The Go service publishes a `checkout_submitted` event to a queue like Google Pub/Sub.
+* The Python service subscribes to this event stream, performs async scoring and writes status to a data store.
+* User can:
+  * Poll status
+  * Or receive a notification (eg. email)
+
+![Future Architecture](./docs/architecture_future.png)
+
+---
+
 ## API Endpoints
 
 ### GET /offers

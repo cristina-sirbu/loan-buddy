@@ -1,0 +1,19 @@
+@startuml
+skinparam componentStyle rectangle
+
+actor User
+
+component "Go Service" as GoApp
+queue "Pub/Sub Topic\n(checkout_submitted)" as PubSub
+component "Python Service\n(ML scoring)" as PythonApp
+database "Data Store\n(order status)" as DB
+component "Notification\nSystem" as Notify
+
+User --> GoApp : Select loan / Checkout
+GoApp --> PubSub : Publish checkout_submitted
+PythonApp --> PubSub : Subscribes to topic
+PythonApp --> DB : Write approval status
+Notify --> User : Send notification (optional)
+User --> DB : Poll for status (optional)
+
+@enduml

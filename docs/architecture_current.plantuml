@@ -1,0 +1,13 @@
+@startuml
+skinparam componentStyle rectangle
+
+actor User
+
+component "Go Service" as GoApp
+component "Python FastAPI\n(confirm-payment)" as PythonApp
+
+User --> GoApp : Select loan / Checkout
+GoApp --> PythonApp : HTTP POST /confirm-payment
+PythonApp --> GoApp : Respond with APPROVED/REJECTED
+
+@enduml

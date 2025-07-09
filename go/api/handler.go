@@ -1,9 +1,9 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
 	"time"
@@ -62,7 +62,7 @@ func Checkout(c echo.Context) error {
 		CreatedAt: time.Now(),
 	}
 
-	newOrder.Status = simulateOrderStatus()
+	newOrder.Status = simulateOrderStatus(newOrder)
 
 	Orders = append(Orders, newOrder)
 
@@ -72,11 +72,48 @@ func Checkout(c echo.Context) error {
 	return c.JSON(http.StatusCreated, newOrder)
 }
 
-func simulateOrderStatus() string {
-	statuses := []string{"APPROVED", "REJECTED"}
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	// Simulate a random status for the order
-	return statuses[r.Intn(len(statuses))]
+func simulateOrderStatus(order models.Order) string {
+	// statuses := []string{"APPROVED", "REJECTED"}
+
+	payment := models.PaymentRequest{
+		OrderID: order.ID,
+		Amount:  getAmountFromLoanID(order.LoanID),
+		Status:  order.Status,
+	}
+
+	jsonData, err := json.Marshal(payment)
+	if err != nil {
+		log.Printf("Error marshalling payment request: %v\n", err)
+		return "REJECTED"
+	}
+
+	paymentServiceURL := os.Getenv("PAYMENT_SERVICE_URL")
+	if paymentServiceURL == "" {
+		log.Println("PAYMENT_SERVICE_URL not set, using default")
+		paymentServiceURL = "http://localhost:8000/confirm-payment"
+	}
+
+	response, err := http.Post(paymentServiceURL, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Printf("Error sending payment request: %v\n", err)
+		return "REJECTED"
+	}
+	defer response.Body.Close()
+
+	var result map[string]string
+	if err := json.NewDecoder(response.Body).Decode(&result); err != nil {
+		log.Printf("Error decoding payment response: %v\n", err)
+		return "FAILED"
+	}
+
+	status, ok := result["status"]
+	if !ok {
+		log.Println("Payment response does not contain status")
+		return "FAILED"
+	}
+
+	log.Printf("Payment response received: order_id=%s status=%s\n", order.ID, status)
+	return status
 }
 
 func writeOrderToFile(order models.Order) {
@@ -94,6 +131,16 @@ func writeOrderToFile(order models.Order) {
 		return
 	}
 	log.Printf("Order written to file: %s\n", order.ID)
+}
+
+func getAmountFromLoanID(loanID string) int {
+	offers := aggregator.AggregateOffers()
+	for _, offer := range offers {
+		if offer.ID == loanID {
+			return offer.Amount
+		}
+	}
+	return 0
 }
 
 func isValidLoanID(id string) bool {

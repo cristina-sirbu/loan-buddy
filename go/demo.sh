@@ -9,7 +9,7 @@ curl -s ${BASE_URL}/offers | jq .
 echo -e "\n> Offers listed above"
 
 echo "> Choose one offer by its ID (e.g. offer2)"
-SELECTED_OFFER_ID="offer2"
+SELECTED_OFFER_ID="offer3"
 USER_ID="cristina"
 
 echo "> Checkout selected offer (loan_id=${SELECTED_OFFER_ID}, user_id=${USER_ID})"
