@@ -16,13 +16,48 @@ provider "google" {
   # credentials = file("fake-gcp-key.json")
 }
 
-resource "google_container_cluster" "loan_buddy_gke" {
-  name     = "loan-buddy-cluster"
+resource "google_cloud_run_service" "go_service" {
+  name     = "loan-buddy-go"
   location = var.region
 
-  initial_node_count = 1
+  template {
+    spec {
+      containers {
+        image = "gcr.io/${var.project_id}/loan-buddy-go:latest"
+        ports {
+          container_port = 8080
+        }
+        env {
+          name  = "PAYMENT_SERVICE_URL"
+          value = var.payment_service_url
+        }
+      }
+    }
+  }
 
-  node_config {
-    machine_type = "e2-medium"
+  traffic {
+    percent         = 100
+    latest_revision = true
+  }
+}
+
+resource "google_cloud_run_service" "python_service" {
+  name     = "loan-buddy-python"
+  location = var.region
+
+  template {
+    spec {
+      containers {
+        image = "gcr.io/${var.project_id}/loan-buddy-python:latest"
+        ports {
+          container_port = 8000
+        }
+      }
+    }
+  }
+
+  traffic {
+    percent         = 100
+    latest_revision = true
   }
 }

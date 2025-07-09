@@ -1,2 +1,6 @@
 {"id":"105a2b56-3e7b-4336-88e3-b6b2c7804398","user_id":"cristina","loan_id":"offer2","status":"APPROVED","created_at":"2025-07-08T22:53:18.891108+02:00"}
 {"id":"e9ff5d84-1302-4f83-b484-3b364277541e","user_id":"cristina","loan_id":"offer2","status":"REJECTED","created_at":"2025-07-08T22:53:32.838703+02:00"}
+{"id":"24c3f359-6435-4b0a-aa0f-2759b0753c91","user_id":"cristina","loan_id":"offer2","status":"200 OK","created_at":"2025-07-09T10:41:54.208033+02:00"}
+{"id":"a375ebb2-aa67-481f-a67a-fbf346a6b0a7","user_id":"cristina","loan_id":"offer2","status":"APPROVED","created_at":"2025-07-09T10:54:36.599672+02:00"}
+{"id":"48ac0df6-c83b-4663-98e6-ae8dacfb6dd7","user_id":"cristina","loan_id":"offer2","status":"APPROVED","created_at":"2025-07-09T10:54:43.520035+02:00"}
+{"id":"e8fd57a6-2be0-4c9d-ab3e-5df4e99cf713","user_id":"cristina","loan_id":"offer3","status":"REJECTED","created_at":"2025-07-09T10:55:34.697577+02:00"}

@@ -5,7 +5,10 @@ variable "project_id" {
 }
 
 variable "region" {
-  description = "GCP region"
-  type        = string
-  default     = "europe-west1"
+  type    = string
+  default = "us-central1"
+}
+
+variable "payment_service_url" {
+  type = string
 }

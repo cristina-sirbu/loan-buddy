@@ -1,7 +1,7 @@
-output "cluster_name" {
-  value = google_container_cluster.loan_buddy_gke.name
+output "go_service_url" {
+  value = google_cloud_run_service.go_service.status[0].url
 }
 
-output "endpoint" {
-  value = google_container_cluster.loan_buddy_gke.endpoint
+output "python_service_url" {
+  value = google_cloud_run_service.python_service.status[0].url
 }

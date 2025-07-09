@@ -4,18 +4,14 @@
 
 ## Features
 
-* GET /offers – returns aggregated, sorted mock loan offers
-
-* POST /offers – accepts a new loan offer (demo purposes)
-
-* Exposes API via Echo framework
-
+* Go service:
+  * GET `/offers` – returns aggregated, sorted mock loan offers
+  * POST `/checkout` → initiates order and calls Python  `confirm-payment` API
+* Python FastAPI:
+  * POST `/confirm-payment` → returns `APPROVED` / `REJECTED`
 * Dockerized & deployed to Kubernetes (Kind)
-
 * Helm chart for cloud-native packaging
-
 * GitHub Actions CI pipeline
-
 * Simulated GCP infrastructure with Terraform
 
 ---
@@ -49,7 +45,7 @@ However, in a scalable production system, this flow would be refactored into a d
 
 ## API Endpoints
 
-### GET /offers
+### GO Backend: GET /offers
 
 Returns aggregated offers from 3 mock providers, sorted by interest rate.
 
@@ -65,23 +61,57 @@ curl -X GET http://localhost:8080/offers
 ]
 ```
 
-### POST /offers
+### GO Backend: POST /checkout
 
-Accepts a JSON offer and echoes it back.
+Submits a selected loan offer for processing. Sends a confirmation request to the Python service and returns the approval status.
 
 ```shell
-curl -X POST http://localhost:8080/offers \
+curl -X POST http://localhost:8080/checkout \
   -H "Content-Type: application/json" \
-  -d '{"provider":"TestProvider","rate":3.7,"amount":8000}'
+  -d '{
+        "user_id": "cristina",
+        "loan_id": "offer2"
+      }'
+```
+
+```json
+{
+  "id": "order-123",
+  "user_id": "cristina",
+  "loan_id": "offer2",
+  "status": "APPROVED",
+  "created_at": "2025-07-08T12:30:45Z"
+}
+```
+
+### Python FastAPI: POST /confirm-payment
+
+This endpoint is called internally by the Go backend after checkout. It simulates an external payment/approval system and returns a decision.
+
+```shell
+curl -X POST http://localhost:8000/confirm-payment \
+  -H "Content-Type: application/json" \
+  -d '{
+        "order_id": "order-123",
+        "amount": 12000,
+        "status": "PENDING"
+      }'
+```
+
+```json
+{
+  "status": "APPROVED"
+}
 ```
 
 ---
 
 ## Running Locally
 
-### Run with Go
+### Run Go Service
 
 ```shell
+cd go/
 # Run application
 go run cmd/loanbuddy/main.go
 # Run tests
@@ -90,26 +120,32 @@ go test ./...
 go test ./... -cover
 ```
 
-### Run with Docker
+### Run Python Service
 
 ```shell
+cd python
+# Install dependencies
+pip install -r requirements.txt
+# Start the FastAPI server
+uvicorn main:app --reload --port 800
+```
+
+### Run with Docker
+
+Go Service:
+
+```shell
+cd go/
 docker build -t loan-buddy .
 docker run -p 8080:8080 loan-buddy
 ```
 
-### Run in Kubernetes (Kind)
+Python Service:
 
 ```shell
-# Build and load into kind
-docker build -t loan-buddy .
-kind load docker-image loan-buddy
-
-# Install with Helm
-helm install loan-buddy ./helm/loan-buddy
-
-# Access via port-forward
-kubectl port-forward svc/loan-buddy 8080:8080
-curl http://localhost:8080/offers
+cd python/
+docker build -t loan-buddy-python -f python/Dockerfile ./python
+docker run -p 8000:8000 loan-buddy-python
 ```
 
 ---
@@ -138,13 +174,14 @@ Note: No credentials are needed because the actual GKE cluster is never deployed
 
 To improve project:
 
+* [x] Add Python FastAPI for checkout confirmation  
 * [ ] Replace mock data with actual third-party APIs
-* [ ] Store data in a real database
-* [ ] Move approval to async (Pub/Sub) for decoupling
-* [ ] Add authentication
+* [ ] Store data in a persistent database
+* [ ] Move approval to async (Pub/Sub) for decouplin
 * [ ] Do an actual deployemnt to GKE
 * [ ] Add retry queue for failed approval requests
 * [ ] Export events to BigQuery for product analytics
+* [ ] Add authentication
 
 ---
 
