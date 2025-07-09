@@ -26,10 +26,14 @@
 
 Returns aggregated offers from 3 mock providers, sorted by interest rate.
 
+```shell
+curl -X GET http://localhost:8080/offers 
+```
+
 ```json
 [
-  { "provider": "ProviderB", "rate": 2.9, "amount": 12000 },
-  { "provider": "ProviderA", "rate": 3.5, "amount": 10000 },
+  { "id": "offer2", "provider": "ProviderB", "rate": 2.9, "amount": 12000 },
+  { "id": "offer2", "provider": "ProviderA", "rate": 3.5, "amount": 10000 },
   ...
 ]
 ```

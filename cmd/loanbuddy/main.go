@@ -13,6 +13,11 @@ func main() {
 	// Set up routes
 	e.GET("/offers", api.GetOffers)
 	e.POST("/offers", api.CreateOffer)
+	e.POST("/checkout", api.Checkout)
+
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(200, map[string]string{"status": "ok"})
+	})
 
 	// Start the server
 	log.Println("Server running on http://localhost:8080")
