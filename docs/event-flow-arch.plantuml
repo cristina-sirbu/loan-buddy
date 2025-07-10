@@ -1,0 +1,14 @@
+@startuml
+actor User
+
+component "Go Service" as GoApp
+queue "Pub/Sub: loan_events" as PubSub
+database "BigQuery\nAnalytics Store" as BQ
+component "Python API\n(/score-loan)" as PythonScore
+
+User --> GoApp : Select offer / Checkout
+GoApp --> PubSub : publish `checkout_completed`
+PubSub --> BQ : Store for analytics
+PubSub --> PythonScore : async ML scoring
+PythonScore --> BQ : Store scores
+@enduml

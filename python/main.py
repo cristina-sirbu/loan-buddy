@@ -19,3 +19,11 @@ def confirm_payment(data: PaymentConfirmation):
         status = "REJECTED"
 
     return {"status": status}
+
+@app.get("/score-loan")
+def score_loan(loan_id: str):
+    return {
+        "loan_id": loan_id,
+        "risk_score": 0.72,
+        "approval_probability": 0.91
+    }

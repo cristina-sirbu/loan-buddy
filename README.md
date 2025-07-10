@@ -1,18 +1,31 @@
 # loan-buddy
 
-> A Go microservice that simulates loan offer aggregation from multiple providers. Since this is a personal project the data is mocked.
+Loan Buddy is a personal project that simulates a commerce backend, built using a Go microservice (for loan aggregation 
+and checkout orchestration) and a Python FastAPI service (which mimics external approval systems).
+
+The system demonstrates:
+- Multi-provider loan offer aggregation (mocked)
+- Order and approval orchestration via direct Go -> Python calls
+- Cloud-native deployment via Docker and Terraform (Cloud Run)
+- A design that anticipates async event flows, analytics and ML scoring pipelines
+
+Even if all data is mocked and the event pipeline is not fully implemented, the architecture is structured to support 
+future extensions like Pub/Sub publishing, BigQuery analytics and A/B testing integrations.
+
+---
 
 ## Features
 
 * Go service:
-  * GET `/offers` – returns aggregated, sorted mock loan offers
-  * POST `/checkout` → initiates order and calls Python  `confirm-payment` API
+  * GET `/offers` –> returns aggregated, sorted mock loan offers
+  * POST `/checkout` -> initiates order and calls Python  `/confirm-payment` API
 * Python FastAPI:
-  * POST `/confirm-payment` → returns `APPROVED` / `REJECTED`
-* Dockerized & deployed to Kubernetes (Kind)
+  * POST `/confirm-payment` -> returns `APPROVED` / `REJECTED`
+  * GET `/score-loan` –> simulates ML scoring with risk and approval probability
+* Dockerized & deployed to Kubernetes and Cloud Run
 * Helm chart for cloud-native packaging
 * GitHub Actions CI pipeline
-* Simulated GCP infrastructure with Terraform
+* Simulated GCP deployment with Terraform
 
 ---
 
@@ -41,6 +54,10 @@ However, in a scalable production system, this flow would be refactored into a d
 
 ![Future Architecture](./docs/architecture_future.png)
 
+### Data flow
+
+Check [dataflow.md](./dataflow.md).
+
 ---
 
 ## API Endpoints
@@ -63,7 +80,7 @@ curl -X GET http://localhost:8080/offers
 
 ### GO Backend: POST /checkout
 
-Submits a selected loan offer for processing. Sends a confirmation request to the Python service and returns the approval status.
+Submits a selected loan offer for processing. Sends a confirmation request to the Python service and returns the approval status and an ML score.
 
 ```shell
 curl -X POST http://localhost:8080/checkout \
@@ -76,11 +93,18 @@ curl -X POST http://localhost:8080/checkout \
 
 ```json
 {
-  "id": "order-123",
-  "user_id": "cristina",
-  "loan_id": "offer2",
-  "status": "APPROVED",
-  "created_at": "2025-07-08T12:30:45Z"
+  "order": {
+    "id": "order-123",
+    "user_id": "cristina",
+    "loan_id": "offer2",
+    "status": "APPROVED",
+    "created_at": "2025-07-08T14:30:45Z"
+  },
+  "score": {
+    "loan_id": "offer2",
+    "risk_score": 0.72,
+    "approval_probability": 0.91
+  }
 }
 ```
 
@@ -101,6 +125,22 @@ curl -X POST http://localhost:8000/confirm-payment \
 ```json
 {
   "status": "APPROVED"
+}
+```
+
+### Python FastAPI: GET /score-loan
+
+This endpoint simulates a machine learning scoring system. It returns a mock risk score and approval probability for the given loan.
+
+```shell
+curl -X GET "http://localhost:8000/score-loan?loan_id=offer2"
+```
+
+```json
+{
+  "loan_id": "offer2",
+  "risk_score": 0.72,
+  "approval_probability": 0.91
 }
 ```
 
@@ -175,13 +215,14 @@ Note: No credentials are needed because the actual GKE cluster is never deployed
 To improve project:
 
 * [x] Add Python FastAPI for checkout confirmation  
-* [ ] Replace mock data with actual third-party APIs
-* [ ] Store data in a persistent database
-* [ ] Move approval to async (Pub/Sub) for decouplin
-* [ ] Do an actual deployemnt to GKE
-* [ ] Add retry queue for failed approval requests
-* [ ] Export events to BigQuery for product analytics
-* [ ] Add authentication
+* [ ] Replace mock data with real external APIs
+* [ ] Persist data in a real database
+* [ ] Move approval logic to async (Pub/Sub)
+* [ ] Deploy to GKE using Helm charts or to Cloud Run using Terraform
+* [ ] Add retry logic for failed approval requests
+* [ ] Export events to BigQuery for analytics
+* [ ] Add scoring integration via ML endpoint
+* [ ] Add authentication layer to backend services
 
 ---
 

@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -40,12 +41,8 @@ func CreateOffer(c echo.Context) error {
 
 // POST /checkout
 func Checkout(c echo.Context) error {
-	type CheckoutRequest struct {
-		UserID string `json:"user_id"`
-		LoanID string `json:"loan_id"`
-	}
 
-	var req CheckoutRequest
+	var req models.CheckoutRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid payload"})
 	}
@@ -62,18 +59,26 @@ func Checkout(c echo.Context) error {
 		CreatedAt: time.Now(),
 	}
 
-	newOrder.Status = simulateOrderStatus(newOrder)
+	score, err := fetchLoanScore(req.LoanID)
+	if err != nil {
+		log.Printf("Warning: Failed to fetch score for loan_id=%s: %v\n", req.LoanID, err)
+	} else {
+		log.Printf("Loan ID: %s | Risk Score: %.2f | Approval Probability: %.2f\n", score.LoanID, score.RiskScore, score.ApprovalProbability)
+	}
+
+	newOrder.Status = fetchOrderStatus(newOrder)
 
 	Orders = append(Orders, newOrder)
-
 	writeOrderToFile(newOrder)
 
 	log.Printf("New order placed: user_id=%s loan_id=%s status=%s\n", newOrder.UserID, newOrder.LoanID, newOrder.Status)
-	return c.JSON(http.StatusCreated, newOrder)
+	return c.JSON(http.StatusCreated, echo.Map{
+		"order": newOrder,
+		"score": score,
+	})
 }
 
-func simulateOrderStatus(order models.Order) string {
-	// statuses := []string{"APPROVED", "REJECTED"}
+func fetchOrderStatus(order models.Order) string {
 
 	payment := models.PaymentRequest{
 		OrderID: order.ID,
@@ -87,13 +92,8 @@ func simulateOrderStatus(order models.Order) string {
 		return "REJECTED"
 	}
 
-	paymentServiceURL := os.Getenv("PAYMENT_SERVICE_URL")
-	if paymentServiceURL == "" {
-		log.Println("PAYMENT_SERVICE_URL not set, using default")
-		paymentServiceURL = "http://localhost:8000/confirm-payment"
-	}
-
-	response, err := http.Post(paymentServiceURL, "application/json", bytes.NewBuffer(jsonData))
+	paymentURL := fmt.Sprintf("%s/confirm-payment", getServiceBaseURL())
+	response, err := http.Post(paymentURL, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Printf("Error sending payment request: %v\n", err)
 		return "REJECTED"
@@ -116,6 +116,23 @@ func simulateOrderStatus(order models.Order) string {
 	return status
 }
 
+func fetchLoanScore(loanID string) (*models.ScoreResponse, error) {
+	scoreURL := fmt.Sprintf("%s/score-loan?loan_id=%s", getServiceBaseURL(), loanID)
+
+	resp, err := http.Get(scoreURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call score-loan: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var score models.ScoreResponse
+	if err := json.NewDecoder(resp.Body).Decode(&score); err != nil {
+		return nil, fmt.Errorf("failed to decode score response: %w", err)
+	}
+
+	return &score, nil
+}
+
 func writeOrderToFile(order models.Order) {
 	file, err := os.OpenFile("orders.json", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -131,6 +148,15 @@ func writeOrderToFile(order models.Order) {
 		return
 	}
 	log.Printf("Order written to file: %s\n", order.ID)
+}
+
+func getServiceBaseURL() string {
+	baseURL := os.Getenv("SERVICE_BASE_URL")
+	if baseURL == "" {
+		log.Println("SERVICE_BASE_URL not set, using default")
+		baseURL = "http://localhost:8000"
+	}
+	return baseURL
 }
 
 func getAmountFromLoanID(loanID string) int {
